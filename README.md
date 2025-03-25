@@ -3,7 +3,6 @@
 [![Github Actions Status](https://github.com/harsha-accenture/gcs-jupyter-plugin.git/workflows/Build/badge.svg)](https://github.com/harsha-accenture/gcs-jupyter-plugin.git/actions/workflows/build.yml)
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/harsha-accenture/gcs-jupyter-plugin.git/main?urlpath=lab)
 
-
 A JupyterLab extension.
 
 This extension is composed of a Python package named `gcs_jupyter_plugin`

@@ -15,17 +15,26 @@ const plugin: JupyterFrontEndPlugin<void> = {
   description: 'A JupyterLab extension.',
   autoStart: true,
   optional: [ISettingRegistry],
-  activate: (app: JupyterFrontEnd, settingRegistry: ISettingRegistry | null) => {
+  activate: (
+    app: JupyterFrontEnd,
+    settingRegistry: ISettingRegistry | null
+  ) => {
     console.log('JupyterLab extension gcs-jupyter-plugin is activated!');
 
     if (settingRegistry) {
       settingRegistry
         .load(plugin.id)
         .then(settings => {
-          console.log('gcs-jupyter-plugin settings loaded:', settings.composite);
+          console.log(
+            'gcs-jupyter-plugin settings loaded:',
+            settings.composite
+          );
         })
         .catch(reason => {
-          console.error('Failed to load settings for gcs-jupyter-plugin.', reason);
+          console.error(
+            'Failed to load settings for gcs-jupyter-plugin.',
+            reason
+          );
         });
     }
 
