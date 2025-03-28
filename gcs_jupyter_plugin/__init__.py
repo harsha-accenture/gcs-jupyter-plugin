@@ -5,39 +5,29 @@ except ImportError:
     # in editable mode with pip. It is highly recommended to install
     # the package from a stable release or in editable mode: https://pip.pypa.io/en/stable/topics/local-project-installs/#editable-installs
     import warnings
+
     warnings.warn("Importing 'gcs_jupyter_plugin' outside a proper installation.")
     __version__ = "dev"
 import logging
 
 from google.cloud.jupyter_config.tokenrenewer import CommandTokenRenewer
 from jupyter_server.services.sessions.sessionmanager import SessionManager
-from kernels_mixer.kernels import MixingMappingKernelManager
-from kernels_mixer.kernelspecs import MixingKernelSpecManager
-from kernels_mixer.websockets import DelegatingWebsocketConnection
+
 from .handlers import setup_handlers
 
 
 def _jupyter_labextension_paths():
-    return [{
-        "src": "labextension",
-        "dest": "gcs-jupyter-plugin"
-    }]
+    return [{"src": "labextension", "dest": "gcs-jupyter-plugin"}]
 
 
 def _jupyter_server_extension_points():
-    return [{
-        "module": "gcs_jupyter_plugin"
-    }]
+    return [{"module": "gcs_jupyter_plugin"}]
+
 
 def _link_jupyter_server_extension(server_app):
 
     c = server_app.config
 
-
-    c.ServerApp.kernel_spec_manager_class = MixingKernelSpecManager
-    c.ServerApp.kernel_manager_class = MixingMappingKernelManager
-    c.ServerApp.session_manager_class = SessionManager
-    c.ServerApp.kernel_websocket_connection_class = DelegatingWebsocketConnection
     c.DelegatingWebsocketConnection.kernel_ws_protocol = ""
 
     c.GatewayClient.auth_scheme = "Bearer"
@@ -55,6 +45,8 @@ def _link_jupyter_server_extension(server_app):
     # See https://github.com/jupyter-server/jupyter_server/issues/1339 for more
     # details and discussion.
     c.GatewayClient.auth_token = "Initial, invalid value"
+
+
 def _load_jupyter_server_extension(server_app):
     """Registers the API handler to receive HTTP requests from the frontend extension.
 
