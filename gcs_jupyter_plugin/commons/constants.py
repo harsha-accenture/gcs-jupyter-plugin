@@ -19,6 +19,4 @@ GCS = "gs://"
 STORAGE_SERVICE_NAME = "storage"
 COMPUTE_SERVICE_DEFAULT_URL = "https://compute.googleapis.com/compute/v1"
 STORAGE_SERVICE_DEFAULT_URL = "https://storage.googleapis.com/storage/v1/"
-
-
-
+CONTENT_TYPE = "application/json"

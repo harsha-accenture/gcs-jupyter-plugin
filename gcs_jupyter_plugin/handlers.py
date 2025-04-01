@@ -5,6 +5,7 @@ from jupyter_server.utils import url_path_join
 import tornado
 
 from gcs_jupyter_plugin import credentials, urls
+from gcs_jupyter_plugin.controllers.listBuckets import ListBucketsController
 
 
 class CredentialsHandler(APIHandler):
@@ -18,6 +19,7 @@ class CredentialsHandler(APIHandler):
             self.log.exception(f"Error fetching credentials from gcloud")
         self.finish(json.dumps(cached))
 
+
 class UrlHandler(APIHandler):
     url = {}
 
@@ -28,6 +30,7 @@ class UrlHandler(APIHandler):
         self.finish(url_map)
         return
 
+
 class LogHandler(APIHandler):
     @tornado.web.authenticated
     async def post(self):
@@ -35,6 +38,7 @@ class LogHandler(APIHandler):
         log_body = self.get_json_body()
         logger.log(log_body["level"], log_body["message"])
         self.finish({"status": "OK"})
+
 
 def setup_handlers(web_app):
     host_pattern = ".*$"
@@ -49,6 +53,7 @@ def setup_handlers(web_app):
         "credentials": CredentialsHandler,
         "getGcpServiceUrls": UrlHandler,
         "log": LogHandler,
+        "api/storage/listBuckets": ListBucketsController,
     }
     handlers = [(full_path(name), handler) for name, handler in handlersMap.items()]
     web_app.add_handlers(host_pattern, handlers)

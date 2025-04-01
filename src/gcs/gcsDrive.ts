@@ -3,7 +3,6 @@ import { ISignal, Signal } from '@lumino/signaling';
 import { GcsService } from './gcsService';
 
 import { showDialog, Dialog } from '@jupyterlab/apputils';
-import { storage_v1 } from '@googleapis/storage';
 
 // Template for an empty Directory IModel.
 const DIRECTORY_IMODEL: Contents.IModel = {
@@ -58,40 +57,53 @@ export class GCSDrive implements Contents.IDrive {
     let paragraph: HTMLElement | null;
     let searchInput = document.getElementById('filter-buckets-objects');
     //@ts-ignore
+
     let searchValue = searchInput.value;
+    console.log('search', searchValue);
     const content = await GcsService.listBuckets({
       prefix: searchValue
     });
 
-    if (content?.error?.code) {
-      if(document.getElementById('gcs-list-bucket-error')){
-        document.getElementById('gcs-list-bucket-error')?.remove()
+    if (content?.error) {
+      if (document.getElementById('gcs-list-bucket-error')) {
+        document.getElementById('gcs-list-bucket-error')?.remove();
       }
       const para = document.createElement('p');
       para.id = 'gcs-list-bucket-error';
       para.style.color = '#ff0000';
-      para.style.maxWidth= '100%';
-      para.style.whiteSpace='normal';
-      para.textContent = content?.error?.message;
+      para.style.maxWidth = '100%';
+      para.style.whiteSpace = 'normal';
+      para.textContent = content?.error;
       paragraph = document.getElementById('filter-buckets-objects');
       paragraph?.after(para);
     } else {
-      if(document.getElementById('gcs-list-bucket-error')){
-        document.getElementById('gcs-list-bucket-error')?.remove()
+      if (document.getElementById('gcs-list-bucket-error')) {
+        document.getElementById('gcs-list-bucket-error')?.remove();
       }
     }
 
     if (!content) {
-      throw 'Error Listing Buckets';
+      throw `Error Listing Buckets ${content}`;
     }
-    return {
+    console.log('aaa', content);
+    // return {
+    //   ...DIRECTORY_IMODEL,
+    //   content:
+    //     content.items?.map((bucket: storage_v1.Schema$Object) => ({
+    //       ...DIRECTORY_IMODEL,
+    //       path: bucket.name,
+    //       name: bucket.name,
+    //       last_modified: bucket.updated ?? ''
+    //     })) ?? []
+    // };
+     return {
       ...DIRECTORY_IMODEL,
       content:
-        content.items?.map((bucket: storage_v1.Schema$Object) => ({
+        content.map((bucket: { items: { name: string, updated: string } }) => ({
           ...DIRECTORY_IMODEL,
-          path: bucket.name,
-          name: bucket.name,
-          last_modified: bucket.updated ?? ''
+          path: bucket.items.name,
+          name: bucket.items.name,
+          last_modified: bucket.items.updated ?? ''
         })) ?? []
     };
   }

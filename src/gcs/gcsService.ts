@@ -15,13 +15,16 @@
  * limitations under the License.
  */
 
-import { API_HEADER_BEARER, API_HEADER_CONTENT_TYPE, gcpServiceUrls } from '../utils/const';
+import { requestAPI } from '../handler';
+import {
+  API_HEADER_BEARER,
+  API_HEADER_CONTENT_TYPE,
+  gcpServiceUrls
+} from '../utils/const';
 import { authApi, loggedFetch } from '../utils/utils';
 import type { storage_v1 } from '@googleapis/storage';
 
 export class GcsService {
-  
-
   /**
    * Translate a Jupyter Lab file path into tokens.  IE.
    *   gs:bucket-name/directory/file.ipynb
@@ -60,6 +63,8 @@ export class GcsService {
       throw 'not logged in';
     }
     const { STORAGE } = await gcpServiceUrls;
+    // const data = (await requestAPI('api/storage/listObjects')) as Response;
+    // console.log(data);
     const requestUrl = new URL(`${STORAGE}b/${bucket}/o`);
     requestUrl.searchParams.append('prefix', prefix);
     requestUrl.searchParams.append('delimiter', '/');
@@ -71,6 +76,7 @@ export class GcsService {
         'X-Goog-User-Project': credentials.project_id || ''
       }
     });
+
     return (await response.json()) as storage_v1.Schema$Objects;
   }
 
@@ -83,19 +89,10 @@ export class GcsService {
     if (!credentials) {
       throw 'not logged in';
     }
-    const { STORAGE } = await gcpServiceUrls;
-    const requestUrl = new URL(`${STORAGE}b`);
-    requestUrl.searchParams.append('project', credentials.project_id ?? '');
-    requestUrl.searchParams.append('prefix', prefix);
-    const response = await loggedFetch(requestUrl.toString(), {
-      method: 'GET',
-      headers: {
-        'Content-Type': API_HEADER_CONTENT_TYPE,
-        Authorization: API_HEADER_BEARER + credentials.access_token,
-        'X-Goog-User-Project': credentials.project_id || ''
-      }
-    });
-    return (await response.json());
+    const data = (await requestAPI(
+      `api/storage/listBuckets?prefix=${prefix}`
+    )) as any;
+    return data;
   }
 
   /**
@@ -186,11 +183,9 @@ export class GcsService {
       throw response.statusText;
     }
 
-    let blob = await response.blob()
+    let blob = await response.blob();
     // Create blob link to download
-    const url = window.URL.createObjectURL(
-      new Blob([blob]),
-    );
+    const url = window.URL.createObjectURL(new Blob([blob]));
     return url;
   }
 
