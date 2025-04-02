@@ -242,23 +242,34 @@ export class GcsService {
     if (!credentials) {
       throw 'not logged in';
     }
-    const { STORAGE_UPLOAD } = await gcpServiceUrls;
-    const requestUrl = new URL(`${STORAGE_UPLOAD}b/${bucket}/o`);
-    let newFolderPath =
-      path === '' ? path + folderName + '/' : path + '/' + folderName + '/';
-    requestUrl.searchParams.append('name', newFolderPath);
-    const response = await loggedFetch(requestUrl.toString(), {
+    // const { STORAGE_UPLOAD } = await gcpServiceUrls;
+    // const requestUrl = new URL(`${STORAGE_UPLOAD}b/${bucket}/o`);
+    // let newFolderPath =
+    //   path === '' ? path + folderName + '/' : path + '/' + folderName + '/';
+    // requestUrl.searchParams.append('name', newFolderPath);
+    // const response = await loggedFetch(requestUrl.toString(), {
+    //   method: 'POST',
+    //   headers: {
+    //     'Content-Type': API_HEADER_CONTENT_TYPE,
+    //     Authorization: API_HEADER_BEARER + credentials.access_token,
+    //     'X-Goog-User-Project': credentials.project_id || ''
+    //   }
+    // });
+    // if (response.status !== 200) {
+    //   throw response.statusText;
+    // }
+    const data = await requestAPI('api/storage/createFolder', {
       method: 'POST',
-      headers: {
-        'Content-Type': API_HEADER_CONTENT_TYPE,
-        Authorization: API_HEADER_BEARER + credentials.access_token,
-        'X-Goog-User-Project': credentials.project_id || ''
-      }
+      body: JSON.stringify({
+        bucket,
+        path,
+        folderName
+      })
     });
-    if (response.status !== 200) {
-      throw response.statusText;
-    }
-    return (await response.json()) as storage_v1.Schema$Object;
+    console.log('folder', data);
+    return data;
+    // console.log("folder",await response.json())
+    // return (await response.json()) as storage_v1.Schema$Object;
   }
 
   /**
@@ -270,24 +281,48 @@ export class GcsService {
     if (!credentials) {
       throw 'not logged in';
     }
-    const { STORAGE } = await gcpServiceUrls;
-    const requestUrl = new URL(
-      `${STORAGE}b/${bucket}/o/${encodeURIComponent(path)}`
-    );
+    // const { STORAGE } = await gcpServiceUrls;
+    // const requestUrl = new URL(
+    //   `${STORAGE}b/${bucket}/o/${encodeURIComponent(path)}`
+    // );
 
-    const response = await fetch(requestUrl.toString(), {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': API_HEADER_CONTENT_TYPE,
-        Authorization: API_HEADER_BEARER + credentials.access_token,
-        'X-Goog-User-Project': credentials.project_id || ''
-      }
-    });
-    if (response.status !== 204) {
+    // const response = await fetch(requestUrl.toString(), {
+    //   method: 'DELETE',
+    //   headers: {
+    //     'Content-Type': API_HEADER_CONTENT_TYPE,
+    //     Authorization: API_HEADER_BEARER + credentials.access_token,
+    //     'X-Goog-User-Project': credentials.project_id || ''
+    //   }
+    // });
+    // if (response.status !== 204) {
+    //   if (response.status === 404) {
+    //     throw 'Deleting Folder/Bucket is not allowed';
+    //   }
+    //   throw response.statusText;
+    // }
+    try {
+      const response: { status?: number, error?: string } = await requestAPI('api/storage/deleteFile', {
+        method: 'POST',
+        body: JSON.stringify({
+          bucket,
+          path
+        })
+      });
+      
+      console.log(response);
+      
       if (response.status === 404) {
-        throw 'Deleting Folder/Bucket is not allowed';
+        throw response.error || 'Deleting Folder/Bucket is not allowed';
       }
-      throw response.statusText;
+      
+      return response;
+    } catch (error: unknown) {
+      console.log('eerr',error)
+      if (typeof error === 'string') {
+        throw error; // Re-throw the specific error message
+      } else {
+        throw 'Error deleting file';
+      }
     }
   }
 
