@@ -254,7 +254,7 @@ export class GCSDrive implements Contents.IDrive {
       created: '',
       content: '',
       writable: true,
-      last_modified: resp.updated ?? '',
+      last_modified: (resp as { updated?: string }).updated ?? '',
       mimetype: '',
       ...options
     };

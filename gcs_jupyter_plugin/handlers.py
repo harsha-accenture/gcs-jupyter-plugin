@@ -9,6 +9,8 @@ from gcs_jupyter_plugin.controllers.gcs import (
     CreateFolderController,
     DeleteFileController,
     ListBucketsController,
+    RenameFileController,
+    SaveFileController,
 )
 
 
@@ -60,6 +62,8 @@ def setup_handlers(web_app):
         "api/storage/listBuckets": ListBucketsController,
         "api/storage/createFolder": CreateFolderController,
         "api/storage/deleteFile": DeleteFileController,
+        "api/storage/renameFile": RenameFileController,
+        "api/storage/saveFile": SaveFileController,
     }
     handlers = [(full_path(name), handler) for name, handler in handlersMap.items()]
     web_app.add_handlers(host_pattern, handlers)

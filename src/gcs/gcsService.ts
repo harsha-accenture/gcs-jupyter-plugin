@@ -206,23 +206,24 @@ export class GcsService {
     if (!credentials) {
       throw 'not logged in';
     }
-    const { STORAGE_UPLOAD } = await gcpServiceUrls;
-    const requestUrl = new URL(`${STORAGE_UPLOAD}b/${bucket}/o`);
-    requestUrl.searchParams.append('name', path);
-    requestUrl.searchParams.append('uploadType', 'media');
-    const response = await loggedFetch(requestUrl.toString(), {
-      method: 'POST',
-      headers: {
-        'Content-Type': API_HEADER_CONTENT_TYPE,
-        Authorization: API_HEADER_BEARER + credentials.access_token,
-        'X-Goog-User-Project': credentials.project_id || ''
-      },
-      body: contents
-    });
-    if (response.status !== 200) {
-      throw response.statusText;
+
+    try {
+      // Create form data to send the file
+      const formData = new FormData();
+      formData.append('bucket', bucket);
+      formData.append('path', path);
+      formData.append('contents', contents);
+      
+      const response = await requestAPI('api/storage/saveFile', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      return response;
+    } catch (error: any) {
+      console.error("Save error:", error);
+      throw error?.message || 'Error saving file';
     }
-    return (await response.json()) as storage_v1.Schema$Object;
   }
 
   /**
@@ -345,26 +346,44 @@ export class GcsService {
     if (!credentials) {
       throw 'not logged in';
     }
-    const { STORAGE } = await gcpServiceUrls;
-    const requestUrl = new URL(
-      `${STORAGE}b/${oldBucket}/o/${encodeURIComponent(
-        oldPath
-      )}/rewriteTo/b/${newBucket}/o/${encodeURIComponent(newPath)}`
-    );
+  //   const { STORAGE } = await gcpServiceUrls;
+  //   const requestUrl = new URL(
+  //     `${STORAGE}b/${oldBucket}/o/${encodeURIComponent(
+  //       oldPath
+  //     )}/rewriteTo/b/${newBucket}/o/${encodeURIComponent(newPath)}`
+  //   );
 
-    const response = await fetch(requestUrl.toString(), {
+  //   const response = await fetch(requestUrl.toString(), {
+  //     method: 'POST',
+  //     headers: {
+  //       'Content-Type': API_HEADER_CONTENT_TYPE,
+  //       Authorization: API_HEADER_BEARER + credentials.access_token,
+  //       'X-Goog-User-Project': credentials.project_id || ''
+  //     }
+  //   });
+
+  //   if (response.status === 200) {
+  //     return response.status;
+  //   } else {
+  //     throw response.statusText;
+  //   }
+  // }
+    
+  try {
+    const response = await requestAPI('api/storage/renameFile', {
       method: 'POST',
-      headers: {
-        'Content-Type': API_HEADER_CONTENT_TYPE,
-        Authorization: API_HEADER_BEARER + credentials.access_token,
-        'X-Goog-User-Project': credentials.project_id || ''
-      }
+      body: JSON.stringify({
+        oldBucket,
+        oldPath,
+        newBucket,
+        newPath
+      })
     });
-
-    if (response.status === 200) {
-      return response.status;
-    } else {
-      throw response.statusText;
-    }
+    
+    return response;
+  } catch (error: any) {
+    console.error("Rename error:", error);
+    throw error?.message || 'Error renaming file';
   }
+}
 }

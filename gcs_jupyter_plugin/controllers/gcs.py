@@ -14,6 +14,8 @@
 
 
 import json
+import os
+import tempfile
 import aiohttp
 import tornado
 from jupyter_server.base.handlers import APIHandler
@@ -108,3 +110,84 @@ class DeleteFileController(APIHandler):
             self.log.exception("Error deleting file")
             self.set_status(500)
             self.finish({"error": str(e)})
+
+
+class RenameFileController(APIHandler):
+    @tornado.web.authenticated
+    async def post(self):
+        try:
+            data = json.loads(self.request.body)
+            old_bucket = data.get("oldBucket")
+            old_path = data.get("oldPath")
+            new_bucket = data.get("newBucket")
+            new_path = data.get("newPath")
+
+            if not old_bucket or not old_path or not new_bucket or not new_path:
+                self.set_status(400)
+                self.finish(json.dumps({"error": "Missing required parameters"}))
+                return
+
+            # Currently rename_blob only works within the same bucket
+            if old_bucket != new_bucket:
+                self.set_status(400)
+                self.finish(
+                    json.dumps({"error": "Cross-bucket renaming is not supported"})
+                )
+                return
+
+            async with aiohttp.ClientSession() as client_session:
+                client = gcs.Client(
+                    await credentials.get_cached(), self.log, client_session
+                )
+
+                result = await client.rename_file(old_bucket, old_path, new_path)
+
+                if "error" in result:
+                    self.set_status(result.get("status", 500))
+                    self.finish(json.dumps(result))
+                else:
+                    self.set_status(200)
+                    self.finish(json.dumps(result))
+
+        except Exception as e:
+            self.log.exception("Error renaming file")
+            self.set_status(500)
+            self.finish(json.dumps({"error": str(e)}))
+
+
+class SaveFileController(APIHandler):
+    @tornado.web.authenticated
+    async def post(self):
+        try:
+            # Get parameters from the request
+            bucket = self.get_body_argument("bucket", None)
+            destination_path = self.get_body_argument("path", None)
+            content = self.get_body_argument("contents", None)
+
+            if not bucket or not destination_path:
+                self.set_status(400)
+                self.finish(json.dumps({"error": "Missing required parameters"}))
+                return
+
+            if not content:
+                self.set_status(400)
+                self.finish(json.dumps({"error": "No content provided"}))
+                return
+
+            # Use the client to upload the content
+            storage_client = gcs.Client(await credentials.get_cached(), self.log, None)
+            result = await storage_client.save_content(
+                bucket, destination_path, content
+            )
+
+            if isinstance(result, dict) and "error" in result:
+                self.set_status(result.get("status", 500))
+                self.finish(json.dumps(result))
+            else:
+                self.set_status(200)
+                self.finish(json.dumps(result))
+
+        except Exception as e:
+            self.log.exception("Error saving content")
+            self.set_status(500)
+            self.finish(json.dumps({"error": str(e)}))

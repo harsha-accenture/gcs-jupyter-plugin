@@ -13,6 +13,7 @@
 # limitations under the License.
 
 
+import json
 import proto
 from gcs_jupyter_plugin import urls
 from gcs_jupyter_plugin.commons.constants import CONTENT_TYPE, STORAGE_SERVICE_NAME
@@ -136,4 +137,77 @@ class Client:
 
         except Exception as e:
             self.log.exception(f"Error deleting file {path}")
+            return {"error": str(e), "status": 500}
+
+    async def rename_file(self, bucket_name, blob_name, new_name):
+        """
+        Renames a blob using the rename_blob method.
+        Note: This only works within the same bucket.
+        """
+        try:
+            token = self._access_token
+            project = self.project_id
+            creds = credentials.Credentials(token)
+            storage_client = storage.Client(project=project, credentials=creds)
+
+            # Get the bucket and blob
+            bucket = storage_client.bucket(bucket_name)
+            blob = bucket.blob(blob_name)
+
+            # Check if source blob exists
+            if not blob.exists():
+                return {"error": f"Source file {blob_name} not found", "status": 404}
+
+            # Rename the blob
+            new_blob = bucket.rename_blob(blob, new_name)
+
+            # Return success response
+            return {"name": new_blob.name, "bucket": bucket_name, "success": True}
+
+        except Exception as e:
+            self.log.exception(f"Error renaming file from {blob_name} to {new_name}")
+            return {"error": str(e), "status": 500}
+
+    async def save_content(self, bucket_name, destination_blob_name, content):
+        """Upload content directly to Google Cloud Storage.
+
+        Args:
+            bucket_name: The name of the GCS bucket
+            destination_blob_name: The path in the bucket where the content should be stored
+            content: The content to upload (string or JSON)
+
+        Returns:
+            Dictionary with metadata or error information
+        """
+        try:
+            # Ensure content is in string format if it's not already
+            if isinstance(content, dict):
+                content = json.dumps(content)
+
+            token = self._access_token
+            project = self.project_id
+            creds = credentials.Credentials(token)
+            storage_client = storage.Client(project=project, credentials=creds)
+            bucket = storage_client.bucket(bucket_name)
+            blob = bucket.blob(destination_blob_name)
+
+            blob.upload_from_string(
+                content,
+                content_type="media",
+            )
+
+            return {
+                "name": destination_blob_name,
+                "bucket": bucket_name,
+                "size": blob.size,
+                "contentType": blob.content_type,
+                "timeCreated": (
+                    blob.time_created.isoformat() if blob.time_created else ""
+                ),
+                "updated": blob.updated.isoformat() if blob.updated else "",
+                "success": True,
+            }
+
+        except Exception as e:
+            self.log.exception(f"Error uploading content to {destination_blob_name}")
             return {"error": str(e), "status": 500}
