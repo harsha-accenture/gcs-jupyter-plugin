@@ -77,6 +77,8 @@ export class GcsService {
       }
     });
 
+    //const result = await response.json();
+    //console.log(JSON.stringify(result));
     return (await response.json()) as storage_v1.Schema$Objects;
   }
 
@@ -92,6 +94,19 @@ export class GcsService {
     const data = (await requestAPI(
       `api/storage/listBuckets?prefix=${prefix}`
     )) as any;
+    return data;
+  }
+
+
+  static async listFiles({ prefix, bucket }: { prefix: string; bucket: string }) {
+    const credentials = await authApi();
+    if (!credentials) {
+      throw 'not logged in';
+    }
+    const data = (await requestAPI(
+      `api/storage/listFiles?prefix=${prefix}&bucket=${bucket}`
+    )) as any;
+    console.log("list files api - result : " , data);
     return data;
   }
 
