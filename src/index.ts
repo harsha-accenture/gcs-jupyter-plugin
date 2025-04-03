@@ -12,7 +12,7 @@ import { IFileBrowserFactory } from '@jupyterlab/filebrowser';
 import { IThemeManager } from '@jupyterlab/apputils';
 import { LabIcon } from '@jupyterlab/ui-components';
 import storageIcon from '../style/icons/storage_icon.svg';
-import storageIconDark from '../style/icons/storage-icon-dark.svg';
+import storageIconDark from '../style/icons/Storage-icon-dark.svg';
 /**
  * Initialization data for the gcs-jupyter-plugin extension.
  */

@@ -6,6 +6,7 @@ import tornado
 
 from gcs_jupyter_plugin import credentials, urls
 from gcs_jupyter_plugin.controllers.listBuckets import ListBucketsController
+from gcs_jupyter_plugin.controllers.listFiles import ListFilesController
 
 
 class CredentialsHandler(APIHandler):
@@ -54,6 +55,7 @@ def setup_handlers(web_app):
         "getGcpServiceUrls": UrlHandler,
         "log": LogHandler,
         "api/storage/listBuckets": ListBucketsController,
+        "api/storage/listFiles": ListFilesController,
     }
     handlers = [(full_path(name), handler) for name, handler in handlersMap.items()]
     web_app.add_handlers(host_pattern, handlers)

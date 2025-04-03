@@ -117,7 +117,7 @@ export class GCSDrive implements Contents.IDrive {
     //@ts-ignore
     let searchValue = searchInput.value;
     const prefix = path.path.length > 0 ? `${path.path}/` : path.path;
-    const content = await GcsService.list({
+    const content = await GcsService.listFiles({
       prefix: prefix + searchValue,
       bucket: path.bucket
     });
@@ -141,8 +141,8 @@ export class GCSDrive implements Contents.IDrive {
     if (content.items && content.items.length > 0) {
       directory_contents = directory_contents.concat(
         content.items
-          .filter(item => item.name && !item.name.endsWith('/'))
-          .map(item => {
+          .filter((item: { name: string; }) => item.name && !item.name.endsWith('/'))
+          .map((item: { name: any; timeCreated: any; updated: any; contentType: any; }) => {
             const itemName = item.name!;
             const path = itemName.split('/');
             const name = path.at(-1) ?? itemName;

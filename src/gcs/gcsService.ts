@@ -95,6 +95,19 @@ export class GcsService {
     return data;
   }
 
+
+  static async listFiles({ prefix, bucket }: { prefix: string; bucket: string }) {
+    const credentials = await authApi();
+    if (!credentials) {
+      throw 'not logged in';
+    }
+    const data = (await requestAPI(
+      `api/storage/listFiles?prefix=${prefix}&bucket=${bucket}`
+    )) as any;
+    console.log(data);
+    return data;
+  }
+
   /**
    * Thin wrapper around object download
    * @see https://cloud.google.com/storage/docs/downloading-objects#rest-download-object
