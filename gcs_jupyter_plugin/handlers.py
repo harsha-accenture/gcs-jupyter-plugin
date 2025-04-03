@@ -5,8 +5,8 @@ from jupyter_server.utils import url_path_join
 import tornado
 
 from gcs_jupyter_plugin import credentials, urls
-from gcs_jupyter_plugin.controllers.listBuckets import ListBucketsController
-from gcs_jupyter_plugin.controllers.listFiles import ListFilesController
+from gcs_jupyter_plugin.controllers.gcs import ListBucketsController
+from gcs_jupyter_plugin.controllers.gcs import ListFilesController
 
 
 class CredentialsHandler(APIHandler):

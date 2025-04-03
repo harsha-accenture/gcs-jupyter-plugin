@@ -19,7 +19,24 @@ import tornado
 from jupyter_server.base.handlers import APIHandler
 
 from gcs_jupyter_plugin import credentials
-from gcs_jupyter_plugin.services import listFiles
+from gcs_jupyter_plugin.services import gcs
+
+
+class ListBucketsController(APIHandler):
+    @tornado.web.authenticated
+    async def get(self):
+        try:
+            prefix = self.get_argument("prefix")
+            async with aiohttp.ClientSession() as client_session:
+                client = gcs.Client(
+                    await credentials.get_cached(), self.log, client_session
+                )
+
+                buckets = await client.list_buckets(prefix)
+            self.finish(json.dumps(buckets))
+        except Exception as e:
+            self.log.exception("Error fetching datasets")
+            self.finish({"error": str(e)})
 
 
 class ListFilesController(APIHandler):
@@ -27,13 +44,13 @@ class ListFilesController(APIHandler):
     async def get(self):
         try:
             prefix = self.get_argument("prefix")
-            prefix = self.get_argument("bucket")
+            bucket = self.get_argument("bucket")
             async with aiohttp.ClientSession() as client_session:
-                client = listFiles.Client(
+                client = gcs.Client(
                     await credentials.get_cached(), self.log, client_session
                 )
 
-                files = await client.list_files(prefix,bucket)
+                files = await client.list_files(bucket,prefix)
             self.finish(json.dumps(files))
         except Exception as e:
             self.log.exception("Error fetching datasets")

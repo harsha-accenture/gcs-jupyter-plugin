@@ -35,6 +35,8 @@ class Client:
         self.region_id = credentials["region_id"]
         self.client_session = client_session
 
+
+    # gcs -- list bucket implementation
     async def list_buckets(self, prefix=None):
         try:
             bucket_list = []
@@ -59,3 +61,32 @@ class Client:
         except Exception as e:
             self.log.exception("Error fetching datasets list")
             return {"error": str(e)}
+
+    # gcs -- list files implementation
+    async def list_files(self, bucket , prefix=None):
+        try:
+            file_list = []
+            token = self._access_token
+            project = self.project_id
+            creds = credentials.Credentials(token)
+            client = storage.Client(project=project, credentials=creds)
+            
+            blobs = client.list_blobs(bucket)
+
+            for file in blobs:
+                file_list.append(
+                    {
+                        "items": {
+                            "name": file.name,
+                            "timeCreated": file.time_created.isoformat() if file.time_created else "",
+                            "updated": file.updated.isoformat() if file.updated else "",
+                            "size": file.size,
+                            "content_type": file.content_type,
+                        }
+                    }
+                )
+            return file_list
+        
+        except Exception as e:
+            self.log.exception(f"Error listing files: {e}")
+            return [] #Return empty list on error.

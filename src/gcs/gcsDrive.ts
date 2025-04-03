@@ -118,55 +118,41 @@ export class GCSDrive implements Contents.IDrive {
     let searchValue = searchInput.value;
     const prefix = path.path.length > 0 ? `${path.path}/` : path.path;
     const content = await GcsService.listFiles({
-      prefix: prefix + searchValue,
-      bucket: path.bucket
+        prefix: prefix + searchValue,
+        bucket: path.bucket,
     });
     if (!content) {
-      throw 'Error Listing Objects';
+        throw 'Error Listing Objects';
     }
     let directory_contents: Contents.IModel[] = [];
-    if (content.prefixes && content.prefixes.length > 0) {
-      directory_contents = directory_contents.concat(
-        content.prefixes.map((prefix: string) => {
-          const path = prefix.split('/');
-          const name = path.at(-2) ?? prefix;
-          return {
-            ...DIRECTORY_IMODEL,
-            path: `${localPath}/${name}`,
-            name: name
-          };
-        })
-      );
-    }
-    if (content.items && content.items.length > 0) {
-      directory_contents = directory_contents.concat(
-        content.items
-          .filter((item: { name: string; }) => item.name && !item.name.endsWith('/'))
-          .map((item: { name: any; timeCreated: any; updated: any; contentType: any; }) => {
-            const itemName = item.name!;
-            const path = itemName.split('/');
-            const name = path.at(-1) ?? itemName;
+
+    if (content && content.length > 0) {
+        directory_contents = content.map((item: { items: { name: string; updated: string; size: number; content_type: string; timeCreated: string; } }) => {
+            const itemName = item.items.name;
+            const pathParts = itemName.split('/');
+            const name = pathParts.at(-1) ?? itemName;
             return {
-              type: 'file',
-              path: `${localPath}/${name}`,
-              name: name,
-              format: 'base64',
-              content: null,
-              created: item.timeCreated ?? '',
-              writable: true,
-              last_modified: item.updated ?? '',
-              mimetype: item.contentType ?? ''
+                type: 'file',
+                path: `${localPath}/${name}`,
+                name: name,
+                format: 'base64',
+                content: null,
+                created: item.items.timeCreated ?? '',
+                writable: true,
+                last_modified: item.items.updated ?? '',
+                mimetype: item.items.content_type ?? '',
+                size: item.items.size
             };
-          })
-      );
+        });
     }
+
     return {
-      ...DIRECTORY_IMODEL,
-      path: localPath,
-      name: localPath.split('\\').at(-1) ?? '',
-      content: directory_contents
+        ...DIRECTORY_IMODEL,
+        path: localPath,
+        name: localPath.split('\\').at(-1) ?? '',
+        content: directory_contents,
     };
-  }
+  } 
 
   /**
    * @returns IModel file for the given local path.
