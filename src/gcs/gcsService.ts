@@ -77,8 +77,6 @@ export class GcsService {
       }
     });
 
-    //const result = await response.json();
-    //console.log(JSON.stringify(result));
     return (await response.json()) as storage_v1.Schema$Objects;
   }
 
@@ -106,7 +104,28 @@ export class GcsService {
     const data = (await requestAPI(
       `api/storage/listFiles?prefix=${prefix}&bucket=${bucket}`
     )) as any;
-    console.log("list files api - result : " , data);
+    return data;
+  }
+
+  static async loadFile({
+    bucket,
+    path,
+    format
+  }: {
+    bucket: string;
+    path: string;
+    format: 'text' | 'json' | 'base64';
+    }
+  ): Promise<string> {
+
+    const credentials = await authApi();
+    if (!credentials) {
+      throw 'not logged in';
+    }
+    const data = (await requestAPI(
+      `api/storage/loadFile?bucket=${bucket}&path=${path}&format=${format}`
+    )) as any;
+
     return data;
   }
 
@@ -114,7 +133,7 @@ export class GcsService {
    * Thin wrapper around object download
    * @see https://cloud.google.com/storage/docs/downloading-objects#rest-download-object
    */
-  static async getFile({
+  static async getFileOld({
     bucket,
     path,
     format

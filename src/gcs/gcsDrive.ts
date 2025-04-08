@@ -126,9 +126,24 @@ export class GCSDrive implements Contents.IDrive {
     }
     let directory_contents: Contents.IModel[] = [];
 
-    if (content && content.length > 0) {
-        directory_contents = content.map((item: { items: { name: string; updated: string; size: number; content_type: string; timeCreated: string; } }) => {
-            const itemName = item.items.name;
+    if (content.prefixes && content.prefixes.length > 0) {
+      directory_contents = directory_contents.concat(
+        content.prefixes
+        .map((item: { prefixes: { name: string } }) => {
+          const pref = item.prefixes.name;
+          const path = pref.split('/');
+          const name = path.at(-2) ?? prefix;
+          return {
+            ...DIRECTORY_IMODEL,
+            path: `${localPath}/${name}`,
+            name: name
+          };
+        })
+      ); 
+    }
+    if (content.files && content.files.length > 0) {
+        directory_contents = content.files.map((item: { items: { name: string; updated: string; size: number; content_type: string; timeCreated: string; } }) => {
+            const itemName = item.items.name!;
             const pathParts = itemName.split('/');
             const name = pathParts.at(-1) ?? itemName;
             return {
@@ -162,11 +177,13 @@ export class GCSDrive implements Contents.IDrive {
     options?: Contents.IFetchOptions
   ): Promise<Contents.IModel> {
     const path = GcsService.pathParser(localPath);
-    const content = await GcsService.getFile({
+    console.log('starting getFile function from GCS Drive')
+    const content = await GcsService.loadFile({
       path: path.path,
       bucket: path.bucket,
       format: options?.format ?? 'text'
     });
+    console.log('post getFile function from GCS Drive')
     if (!content) {
       throw 'Error Listing Objects';
     }
@@ -194,9 +211,13 @@ export class GCSDrive implements Contents.IDrive {
      * 2) If path is a directory in a bucket, list all of it's directory and files.
      * 3) If path is a file, return it's metadata and contents.
      */
+    console.log('Inside get')
+
     if (localPath.length === 0) {
       // Case 1: Return the buckets.
+      console.log('Inside bucket : lp :' , localPath)
       return await this.getBuckets();
+      
     }
 
     // Case 2: Return the directory contents.
@@ -205,6 +226,9 @@ export class GCSDrive implements Contents.IDrive {
       // Case 3?: Looks like there's no items with this prefix, so
       //  maybe it's a file?  Try fetching the file.
       try {
+        console.log('Inside file : lp :' , localPath)
+        console.log('Inside file : dc :' , directory.content
+        )
         return await this.getFile(localPath, options);
       } catch (e) {
         // If it's a 404, maybe it was an (empty) directory after all.

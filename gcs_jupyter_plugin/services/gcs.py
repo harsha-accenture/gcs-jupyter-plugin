@@ -14,6 +14,7 @@
 
 
 import proto
+import json
 from gcs_jupyter_plugin import urls
 from gcs_jupyter_plugin.commons.constants import CONTENT_TYPE, STORAGE_SERVICE_NAME
 from google.oauth2 import credentials
@@ -63,17 +64,33 @@ class Client:
             return {"error": str(e)}
 
     # gcs -- list files implementation
-    async def list_files(self, bucket , prefix=None):
+    async def list_files(self, bucket , prefix):
         try:
+            result = {}
             file_list = []
+            subdir_list = []
             token = self._access_token
             project = self.project_id
             creds = credentials.Credentials(token)
             client = storage.Client(project=project, credentials=creds)
-            
-            blobs = client.list_blobs(bucket)
+            blobs = client.list_blobs(bucket , prefix=prefix, delimiter="/")
+            bucketObj = client.bucket(bucket)
+            files = list(blobs)
 
-            for file in blobs:
+            # Adding Sub-directories
+            if blobs.prefixes:
+                for pref in blobs.prefixes:
+                    subdir_name = pref[:-1]
+                    subdir_list.append(
+                    {
+                        "prefixes": {
+                            "name": pref
+                        }
+                    }
+                )
+            
+            # Adding Files
+            for file in files:
                 file_list.append(
                     {
                         "items": {
@@ -85,8 +102,32 @@ class Client:
                         }
                     }
                 )
-            return file_list
+            
+            result["prefixes"] = subdir_list
+            result["files"] = file_list
+            return result
         
         except Exception as e:
             self.log.exception(f"Error listing files: {e}")
+            return [] #Return empty list on error.
+
+    async def get_file(self, bucket, file_path , format):
+        try:
+            token = self._access_token
+            project = self.project_id
+            creds = credentials.Credentials(token)
+            client = storage.Client(project=project, credentials=creds)
+            bucket = client.bucket(bucket)
+            blob = bucket.blob(file_path)
+
+            if format == 'base64':
+                return base64.b64encode(blob.download_as_bytes()).decode('utf-8')
+            elif format == 'json':
+                file_content = blob.download_as_text()
+                return json.loads(file_content)
+            else:
+                return blob.download_as_text()
+
+        except Exception as e:
+            self.log.exception(f"Error getting file: {e}")
             return [] #Return empty list on error.
