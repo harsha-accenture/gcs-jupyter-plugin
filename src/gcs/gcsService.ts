@@ -63,8 +63,6 @@ export class GcsService {
       throw 'not logged in';
     }
     const { STORAGE } = await gcpServiceUrls;
-    // const data = (await requestAPI('api/storage/listObjects')) as Response;
-    // console.log(data);
     const requestUrl = new URL(`${STORAGE}b/${bucket}/o`);
     requestUrl.searchParams.append('prefix', prefix);
     requestUrl.searchParams.append('delimiter', '/');
@@ -181,12 +179,12 @@ export class GcsService {
     });
     if (response.status !== 200) {
       throw response.statusText;
-    }
+    }      
+      let blob = await response.blob();
+      // Create blob link to download
+      const url = window.URL.createObjectURL(new Blob([blob]));
+      return url;      
 
-    let blob = await response.blob();
-    // Create blob link to download
-    const url = window.URL.createObjectURL(new Blob([blob]));
-    return url;
   }
 
   /**
@@ -221,7 +219,6 @@ export class GcsService {
       
       return response;
     } catch (error: any) {
-      console.error("Save error:", error);
       throw error?.message || 'Error saving file';
     }
   }
@@ -243,22 +240,6 @@ export class GcsService {
     if (!credentials) {
       throw 'not logged in';
     }
-    // const { STORAGE_UPLOAD } = await gcpServiceUrls;
-    // const requestUrl = new URL(`${STORAGE_UPLOAD}b/${bucket}/o`);
-    // let newFolderPath =
-    //   path === '' ? path + folderName + '/' : path + '/' + folderName + '/';
-    // requestUrl.searchParams.append('name', newFolderPath);
-    // const response = await loggedFetch(requestUrl.toString(), {
-    //   method: 'POST',
-    //   headers: {
-    //     'Content-Type': API_HEADER_CONTENT_TYPE,
-    //     Authorization: API_HEADER_BEARER + credentials.access_token,
-    //     'X-Goog-User-Project': credentials.project_id || ''
-    //   }
-    // });
-    // if (response.status !== 200) {
-    //   throw response.statusText;
-    // }
     const data = await requestAPI('api/storage/createFolder', {
       method: 'POST',
       body: JSON.stringify({
@@ -267,10 +248,7 @@ export class GcsService {
         folderName
       })
     });
-    console.log('folder', data);
     return data;
-    // console.log("folder",await response.json())
-    // return (await response.json()) as storage_v1.Schema$Object;
   }
 
   /**
@@ -282,25 +260,6 @@ export class GcsService {
     if (!credentials) {
       throw 'not logged in';
     }
-    // const { STORAGE } = await gcpServiceUrls;
-    // const requestUrl = new URL(
-    //   `${STORAGE}b/${bucket}/o/${encodeURIComponent(path)}`
-    // );
-
-    // const response = await fetch(requestUrl.toString(), {
-    //   method: 'DELETE',
-    //   headers: {
-    //     'Content-Type': API_HEADER_CONTENT_TYPE,
-    //     Authorization: API_HEADER_BEARER + credentials.access_token,
-    //     'X-Goog-User-Project': credentials.project_id || ''
-    //   }
-    // });
-    // if (response.status !== 204) {
-    //   if (response.status === 404) {
-    //     throw 'Deleting Folder/Bucket is not allowed';
-    //   }
-    //   throw response.statusText;
-    // }
     try {
       const response: { status?: number, error?: string } = await requestAPI('api/storage/deleteFile', {
         method: 'POST',
@@ -309,18 +268,15 @@ export class GcsService {
           path
         })
       });
-      
-      console.log(response);
-      
+            
       if (response.status === 404) {
         throw response.error || 'Deleting Folder/Bucket is not allowed';
       }
       
       return response;
     } catch (error: unknown) {
-      console.log('eerr',error)
       if (typeof error === 'string') {
-        throw error; // Re-throw the specific error message
+        throw error; 
       } else {
         throw 'Error deleting file';
       }
@@ -346,29 +302,6 @@ export class GcsService {
     if (!credentials) {
       throw 'not logged in';
     }
-  //   const { STORAGE } = await gcpServiceUrls;
-  //   const requestUrl = new URL(
-  //     `${STORAGE}b/${oldBucket}/o/${encodeURIComponent(
-  //       oldPath
-  //     )}/rewriteTo/b/${newBucket}/o/${encodeURIComponent(newPath)}`
-  //   );
-
-  //   const response = await fetch(requestUrl.toString(), {
-  //     method: 'POST',
-  //     headers: {
-  //       'Content-Type': API_HEADER_CONTENT_TYPE,
-  //       Authorization: API_HEADER_BEARER + credentials.access_token,
-  //       'X-Goog-User-Project': credentials.project_id || ''
-  //     }
-  //   });
-
-  //   if (response.status === 200) {
-  //     return response.status;
-  //   } else {
-  //     throw response.statusText;
-  //   }
-  // }
-    
   try {
     const response = await requestAPI('api/storage/renameFile', {
       method: 'POST',
@@ -382,7 +315,6 @@ export class GcsService {
     
     return response;
   } catch (error: any) {
-    console.error("Rename error:", error);
     throw error?.message || 'Error renaming file';
   }
 }
