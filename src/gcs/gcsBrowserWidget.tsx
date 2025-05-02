@@ -97,7 +97,7 @@ export class GcsBrowserWidget extends Widget {
             filePath = path.path + '/' + file.name;
           }
 
-          const content = await GcsService.list({
+          const content = await GcsService.listFiles({
             prefix: filePath,
             bucket: path.bucket
           });
@@ -158,6 +158,10 @@ export class GcsBrowserWidget extends Widget {
     this.node.style.height = '100%';
     this.node.style.display = 'flex';
     this.node.style.flexDirection = 'column';
+
+    this.browser.node.style.overflowY = 'auto'; // Ensure vertical scrolling is enabled if needed
+    this.browser.node.style.flexShrink = '1';
+    this.browser.node.style.flexGrow = '1';
 
     (this.layout as PanelLayout).addWidget(
       new TitleWidget('Google Cloud Storage', true)

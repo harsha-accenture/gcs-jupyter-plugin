@@ -117,18 +117,21 @@ export class GCSDrive implements Contents.IDrive {
     //@ts-ignore
     let searchValue = searchInput.value;
     const prefix = path.path.length > 0 ? `${path.path}/` : path.path;
-    const content = await GcsService.list({
-      prefix: prefix + searchValue,
-      bucket: path.bucket
+    const content = await GcsService.listFiles({
+        prefix: prefix + searchValue,
+        bucket: path.bucket,
     });
     if (!content) {
-      throw 'Error Listing Objects';
+        throw 'Error Listing Objects';
     }
     let directory_contents: Contents.IModel[] = [];
+
     if (content.prefixes && content.prefixes.length > 0) {
       directory_contents = directory_contents.concat(
-        content.prefixes.map((prefix: string) => {
-          const path = prefix.split('/');
+        content.prefixes
+        .map((item: { prefixes: { name: string } }) => {
+          const pref = item.prefixes.name;
+          const path = pref.split('/');
           const name = path.at(-2) ?? prefix;
           return {
             ...DIRECTORY_IMODEL,
@@ -136,35 +139,33 @@ export class GCSDrive implements Contents.IDrive {
             name: name
           };
         })
-      );
+      ); 
     }
-    if (content.items && content.items.length > 0) {
-      directory_contents = directory_contents.concat(
-        content.items
-          .filter(item => item.name && !item.name.endsWith('/'))
-          .map(item => {
-            const itemName = item.name!;
-            const path = itemName.split('/');
-            const name = path.at(-1) ?? itemName;
+    if (content.files && content.files.length > 0) {
+        directory_contents = content.files.map((item: { items: { name: string; updated: string; size: number; content_type: string; timeCreated: string; } }) => {
+            const itemName = item.items.name!;
+            const pathParts = itemName.split('/');
+            const name = pathParts.at(-1) ?? itemName;
             return {
-              type: 'file',
-              path: `${localPath}/${name}`,
-              name: name,
-              format: 'base64',
-              content: null,
-              created: item.timeCreated ?? '',
-              writable: true,
-              last_modified: item.updated ?? '',
-              mimetype: item.contentType ?? ''
+                type: 'file',
+                path: `${localPath}/${name}`,
+                name: name,
+                format: 'base64',
+                content: null,
+                created: item.items.timeCreated ?? '',
+                writable: true,
+                last_modified: item.items.updated ?? '',
+                mimetype: item.items.content_type ?? '',
+                size: item.items.size
             };
-          })
-      );
+        });
     }
+
     return {
-      ...DIRECTORY_IMODEL,
-      path: localPath,
-      name: localPath.split('\\').at(-1) ?? '',
-      content: directory_contents
+        ...DIRECTORY_IMODEL,
+        path: localPath,
+        name: localPath.split('\\').at(-1) ?? '',
+        content: directory_contents,
     };
   }
 
@@ -176,7 +177,7 @@ export class GCSDrive implements Contents.IDrive {
     options?: Contents.IFetchOptions
   ): Promise<Contents.IModel> {
     const path = GcsService.pathParser(localPath);
-    const content = await GcsService.getFile({
+    const content = await GcsService.loadFile({
       path: path.path,
       bucket: path.bucket,
       format: options?.format ?? 'text'
@@ -265,14 +266,18 @@ export class GCSDrive implements Contents.IDrive {
     options?: Contents.IFetchOptions
   ): Promise<string> {
     const path = GcsService.pathParser(localPath);
-    const fileContentURL = await GcsService.downloadFile({
+    const fileContent = await GcsService.downloadFileNew({
       path: path.path,
       bucket: path.bucket,
       name: path.name ? path.name : '',
       format: options?.format ?? 'text'
     });
 
-    return fileContentURL;
+    const url = URL.createObjectURL(new Blob([fileContent], {type:'application/json'}));
+    // const fileName = path.name ? path.name : '';
+    
+    // return `${url}?filename=${encodeURIComponent(fileName)}`;
+    return url;
   }
 
   async newUntitled(
@@ -292,7 +297,7 @@ export class GCSDrive implements Contents.IDrive {
 
     const path = GcsService.pathParser(localPath);
 
-    const content = await GcsService.list({
+    const content = await GcsService.listFiles({
       prefix:
         path.path === ''
           ? path.path + 'UntitledFolder'

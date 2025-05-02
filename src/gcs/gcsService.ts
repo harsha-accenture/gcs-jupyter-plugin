@@ -22,7 +22,7 @@ import {
   gcpServiceUrls
 } from '../utils/const';
 import { authApi, loggedFetch } from '../utils/utils';
-import type { storage_v1 } from '@googleapis/storage';
+
 
 export class GcsService {
   /**
@@ -53,10 +53,72 @@ export class GcsService {
     };
   }
 
+  static async listFiles({ prefix, bucket }: { prefix: string; bucket: string }) {
+    const credentials = await authApi();
+    if (!credentials) {
+      throw 'not logged in';
+    }
+    const data = (await requestAPI(
+      `api/storage/listFiles?prefix=${prefix}&bucket=${bucket}`
+    )) as any;
+    return data;
+  }
+
+  /**
+   * Thin wrapper around object download
+   * @see https://cloud.google.com/storage/docs/downloading-objects#rest-download-object
+   */
+  static async loadFile({bucket, path, format }: {
+    bucket: string; path: string; format: 'text' | 'json' | 'base64';
+    }
+  ): Promise<string> {
+
+    const credentials = await authApi();
+    if (!credentials) {
+      throw 'not logged in';
+    }
+    const data = (await requestAPI(
+      `api/storage/loadFile?bucket=${bucket}&path=${path}&format=${format}`
+    )) as any;
+
+    return data;
+  }
+
+  /**
+   * Thin wrapper around object download
+   * @see https://cloud.google.com/storage/docs/downloading-objects#rest-download-object
+  */
+  static async downloadFileNew({
+    bucket,
+    path,
+    name,
+    format
+  }: {
+    bucket: string;
+    path: string;
+    name: string;
+    format: 'text' | 'json' | 'base64';
+  }): Promise<string> {
+
+    const credentials = await authApi();
+    if (!credentials) {
+      throw 'not logged in';
+    }
+
+    const response = (await requestAPI(
+      `api/storage/downloadFile?bucket=${bucket}&path=${path}&name=${name}&format=${format}`
+    )) as any;
+    
+    console.log(response)
+    return response;
+
+  }
+
   /**
    * Thin wrapper around storage.object.list
    * @see https://cloud.google.com/storage/docs/listing-objects#rest-list-objects
    */
+  /**
   static async list({ prefix, bucket }: { prefix: string; bucket: string }) {
     const credentials = await authApi();
     if (!credentials) {
@@ -76,9 +138,9 @@ export class GcsService {
     });
 
     return (await response.json()) as storage_v1.Schema$Objects;
-  }
-
-  /**
+  }*/
+  
+    /**
    * Thin wrapper around storage.bucket.list
    * @see https://cloud.google.com/storage/docs/listing-buckets#rest-list-buckets
    */
