@@ -40,27 +40,6 @@ export const authApi = async (
         config_error: (data as { config_error: number }).config_error,
         login_error: (data as { login_error: number }).login_error
       };
-      // if (checkApiEnabled) {
-      //   if (credentials.login_error || credentials.config_error) {
-      //     try {
-      //       const dialogResult = await showLoginDialog({
-      //         loginError: credentials.login_error === 1,
-      //         configError: credentials.config_error === 1
-      //       });
-      //       if (dialogResult) {
-      //         return await authApi();
-      //       } else {
-      //         console.log('cance', dialogResult);
-      //         return credentials;
-      //       }
-      //     } catch (dialogError) {
-      //       console.error('Dialog was cancelled or failed:', dialogError);
-      //       return credentials;
-      //     }
-      //   } else {
-      //     console.error('Invalid data format.');
-      //   }
-      // }
       return credentials
     }
   } catch (reason) {

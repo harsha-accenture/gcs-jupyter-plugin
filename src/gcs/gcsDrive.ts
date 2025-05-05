@@ -1,3 +1,20 @@
+/**
+ * @license
+ * Copyright 2023 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import { Contents, ServerConnection } from '@jupyterlab/services';
 import { ISignal, Signal } from '@lumino/signaling';
 import { GcsService } from './gcsService';
@@ -59,7 +76,6 @@ export class GCSDrive implements Contents.IDrive {
     //@ts-ignore
 
     let searchValue = searchInput.value;
-    console.log('search', searchValue);
     const content = await GcsService.listBuckets({
       prefix: searchValue
     });
@@ -85,17 +101,6 @@ export class GCSDrive implements Contents.IDrive {
     if (!content) {
       throw `Error Listing Buckets ${content}`;
     }
-    console.log('aaa', content);
-    // return {
-    //   ...DIRECTORY_IMODEL,
-    //   content:
-    //     content.items?.map((bucket: storage_v1.Schema$Object) => ({
-    //       ...DIRECTORY_IMODEL,
-    //       path: bucket.name,
-    //       name: bucket.name,
-    //       last_modified: bucket.updated ?? ''
-    //     })) ?? []
-    // };
      return {
       ...DIRECTORY_IMODEL,
       content:
@@ -229,10 +234,6 @@ export class GCSDrive implements Contents.IDrive {
     return directory;
   }
 
-  // updateQuery(query: string): void {
-  //   this._currentPrefix = query;
-  // }
-
   async save(
     localPath: string,
     options?: Partial<Contents.IModel>
@@ -266,7 +267,7 @@ export class GCSDrive implements Contents.IDrive {
     options?: Contents.IFetchOptions
   ): Promise<string> {
     const path = GcsService.pathParser(localPath);
-    const fileContent = await GcsService.downloadFileNew({
+    const fileContent = await GcsService.downloadFile({
       path: path.path,
       bucket: path.bucket,
       name: path.name ? path.name : '',
@@ -274,9 +275,7 @@ export class GCSDrive implements Contents.IDrive {
     });
 
     const url = URL.createObjectURL(new Blob([fileContent], {type:'application/json'}));
-    // const fileName = path.name ? path.name : '';
     
-    // return `${url}?filename=${encodeURIComponent(fileName)}`;
     return url;
   }
 
@@ -348,11 +347,10 @@ export class GCSDrive implements Contents.IDrive {
 
   async delete(path: string): Promise<void> {
     const localPath = GcsService.pathParser(path);
-    const resp = await GcsService.deleteFile({
+    await GcsService.deleteFile({
       bucket: localPath.bucket,
       path: localPath.path
     });
-    console.log(resp);
     this._fileChanged.emit({
       type: 'delete',
       oldValue: { path },

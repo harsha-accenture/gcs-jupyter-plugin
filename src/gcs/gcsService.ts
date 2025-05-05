@@ -16,12 +16,7 @@
  */
 
 import { requestAPI } from '../handler';
-import {
-  API_HEADER_BEARER,
-  API_HEADER_CONTENT_TYPE,
-  gcpServiceUrls
-} from '../utils/const';
-import { authApi, loggedFetch } from '../utils/utils';
+import { authApi } from '../utils/utils';
 
 
 export class GcsService {
@@ -53,6 +48,10 @@ export class GcsService {
     };
   }
 
+  /**
+   * Thin wrapper around storage.object.list
+   * @see https://cloud.google.com/storage/docs/listing-objects
+   */
   static async listFiles({ prefix, bucket }: { prefix: string; bucket: string }) {
     const credentials = await authApi();
     if (!credentials) {
@@ -65,8 +64,8 @@ export class GcsService {
   }
 
   /**
-   * Thin wrapper around object download
-   * @see https://cloud.google.com/storage/docs/downloading-objects#rest-download-object
+   * Thin wrapper around storage.object.download-into-memory
+   * @see https://cloud.google.com/storage/docs/downloading-objects-into-memory
    */
   static async loadFile({bucket, path, format }: {
     bucket: string; path: string; format: 'text' | 'json' | 'base64';
@@ -85,10 +84,10 @@ export class GcsService {
   }
 
   /**
-   * Thin wrapper around object download
+   * Thin wrapper around storage.object.download
    * @see https://cloud.google.com/storage/docs/downloading-objects#rest-download-object
-  */
-  static async downloadFileNew({
+   */
+  static async downloadFile({
     bucket,
     path,
     name,
@@ -109,36 +108,9 @@ export class GcsService {
       `api/storage/downloadFile?bucket=${bucket}&path=${path}&name=${name}&format=${format}`
     )) as any;
     
-    console.log(response)
     return response;
 
   }
-
-  /**
-   * Thin wrapper around storage.object.list
-   * @see https://cloud.google.com/storage/docs/listing-objects#rest-list-objects
-   */
-  /**
-  static async list({ prefix, bucket }: { prefix: string; bucket: string }) {
-    const credentials = await authApi();
-    if (!credentials) {
-      throw 'not logged in';
-    }
-    const { STORAGE } = await gcpServiceUrls;
-    const requestUrl = new URL(`${STORAGE}b/${bucket}/o`);
-    requestUrl.searchParams.append('prefix', prefix);
-    requestUrl.searchParams.append('delimiter', '/');
-    const response = await fetch(requestUrl.toString(), {
-      method: 'GET',
-      headers: {
-        'Content-Type': API_HEADER_CONTENT_TYPE,
-        Authorization: API_HEADER_BEARER + credentials.access_token,
-        'X-Goog-User-Project': credentials.project_id || ''
-      }
-    });
-
-    return (await response.json()) as storage_v1.Schema$Objects;
-  }*/
   
     /**
    * Thin wrapper around storage.bucket.list
@@ -156,102 +128,8 @@ export class GcsService {
   }
 
   /**
-   * Thin wrapper around object download
-   * @see https://cloud.google.com/storage/docs/downloading-objects#rest-download-object
-   */
-  static async getFile({
-    bucket,
-    path,
-    format
-  }: {
-    bucket: string;
-    path: string;
-    format: 'text' | 'json' | 'base64';
-  }): Promise<string> {
-    const credentials = await authApi();
-    if (!credentials) {
-      throw 'not logged in';
-    }
-    const { STORAGE } = await gcpServiceUrls;
-    const requestUrl = new URL(
-      `${STORAGE}b/${bucket}/o/${encodeURIComponent(path)}`
-    );
-    requestUrl.searchParams.append('alt', 'media');
-    const response = await loggedFetch(requestUrl.toString(), {
-      method: 'GET',
-      headers: {
-        'Content-Type': API_HEADER_CONTENT_TYPE,
-        Authorization: API_HEADER_BEARER + credentials.access_token,
-        'X-Goog-User-Project': credentials.project_id || ''
-      }
-    });
-    if (response.status !== 200) {
-      throw response.statusText;
-    }
-    if (format == 'base64') {
-      const blob = await response.blob();
-      const reader = new FileReader();
-      return new Promise((resolve, reject) => {
-        reader.readAsDataURL(blob);
-        reader.onloadend = () => {
-          resolve(reader.result as string);
-        };
-        reader.onerror = e => {
-          reject(e);
-        };
-      });
-    } else if (format == 'json') {
-      return await response.json();
-    } else {
-      return await response.text();
-    }
-  }
-
-  /**
-   * Thin wrapper around object download
-   * @see https://cloud.google.com/storage/docs/downloading-objects#rest-download-object
-   */
-  static async downloadFile({
-    bucket,
-    path,
-    name,
-    format
-  }: {
-    bucket: string;
-    path: string;
-    name: string;
-    format: 'text' | 'json' | 'base64';
-  }): Promise<string> {
-    const credentials = await authApi();
-    if (!credentials) {
-      throw 'not logged in';
-    }
-    const { STORAGE } = await gcpServiceUrls;
-    const requestUrl = new URL(
-      `${STORAGE}b/${bucket}/o/${encodeURIComponent(path)}`
-    );
-    requestUrl.searchParams.append('alt', 'media');
-    const response = await fetch(requestUrl.toString(), {
-      method: 'GET',
-      headers: {
-        'Content-Type': API_HEADER_CONTENT_TYPE,
-        Authorization: API_HEADER_BEARER + credentials.access_token,
-        'X-Goog-User-Project': credentials.project_id || ''
-      }
-    });
-    if (response.status !== 200) {
-      throw response.statusText;
-    }      
-      let blob = await response.blob();
-      // Create blob link to download
-      const url = window.URL.createObjectURL(new Blob([blob]));
-      return url;      
-
-  }
-
-  /**
-   * Thin wrapper around object upload
-   * @see https://cloud.google.com/storage/docs/uploading-objects#rest-upload-objects
+   * Thin wrapper around storage.object.upload
+   * @see https://cloud.google.com/storage/docs/uploading-objects-from-memory
    */
   static async saveFile({
     bucket,
@@ -286,8 +164,8 @@ export class GcsService {
   }
 
   /**
-   * Thin wrapper around object upload
-   * @see https://cloud.google.com/storage/docs/uploading-objects#rest-upload-objects
+   * Thin wrapper around storage.folder.create
+   * @see https://cloud.google.com/storage/docs/create-folders
    */
   static async createFolder({
     bucket,
@@ -314,7 +192,7 @@ export class GcsService {
   }
 
   /**
-   * Thin wrapper around object delete
+   * Thin wrapper around storage.object.delete
    * @see https://cloud.google.com/storage/docs/deleting-objects
    */
   static async deleteFile({ bucket, path }: { bucket: string; path: string }) {
@@ -346,7 +224,7 @@ export class GcsService {
   }
 
   /**
-   * Thin wrapper around object delete
+   * Thin wrapper around storage.object.rename
    * @see https://cloud.google.com/storage/docs/copying-renaming-moving-objects
    */
   static async renameFile({

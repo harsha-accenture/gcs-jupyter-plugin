@@ -19,7 +19,6 @@ import io
 import aiohttp
 import mimetypes
 import base64
-#import magic
 from datetime import timedelta
 
 import tornado.ioloop
@@ -259,14 +258,7 @@ class Client (tornado.web.RequestHandler):
             # Adding Sub-directories
             if blobs.prefixes:
                 for pref in blobs.prefixes:
-                    # To get the updated time of a prefix, we need to list the objects within that prefix
-                    # and find the latest updated time among them.
-                    # prefix_blobs = client.list_blobs(bucket, prefix=pref, max_results=1)
-                    # latest_updated = None
-                    # for blob in prefix_blobs:
-                    #     latest_updated = blob.updated
-                    #     break  # We only need the first
-
+                    
                     subdir_name = pref[:-1]
                     subdir_list.append(
                         {
@@ -315,7 +307,7 @@ class Client (tornado.web.RequestHandler):
                     return base64_encoded
                 except Exception as encode_error:
                     print(f"Error during base64 encoding: {encode_error}")
-                    return [] # Or perhaps re-raise the error for debugging
+                    return []
             elif format == 'json':
                 file_content = blob.download_as_text()
                 return json.loads(file_content)
@@ -337,88 +329,7 @@ class Client (tornado.web.RequestHandler):
             blob = bucket.blob(file_path)
 
             return blob.download_as_bytes()
-            
-            # if format == 'base64':
-            #     file_content = blob.download_as_bytes()
-            #     try:
-            #         base64_encoded = base64.b64encode(file_content).decode('utf-8')
-            #         return base64_encoded
-            #     except Exception as encode_error:
-            #         print(f"Error during base64 encoding: {encode_error}")
-            #         return [] # Or perhaps re-raise the error for debugging
-            # elif format == 'json':
-            #     file_content = blob.download_as_text()
-            #     return json.loads(file_content)
-            # else:
-            #     return blob.download_as_text()
 
         except Exception as e:
             self.log.exception(f"Error getting file: {e}")
             return [] #Return Empty File
-
-
-
-        #     token = self._access_token
-        #     project = self.project_id
-        #     creds = credentials.Credentials(token)
-        #     client = storage.Client(project=project, credentials=creds)
-        #     bucket = client.bucket(bucket_name)
-        #     print("bucket : " ,  bucket, " file_path : ", file_path , " name : " , name , " format : " , format)
-        #     blob_path = file_path
-        #     print("blob path" , blob_path)
-        #     blob = bucket.blob(blob_path)
-
-        #     if not blob.exists():
-        #         self.set_status(404)
-        #         self.write({"error": "File not found"})
-        #         return
-
-        #     # Generate a signed URL that is valid for, 5 minutes
-        #     url = blob.generate_signed_url(
-        #         version="v4",
-        #         # This service account key should have storage.objects.get permission
-        #         method="GET",
-        #         expiration=timedelta(minutes=5),
-        #     )
-
-        #     return url
-        # except Exception as e:
-        #     raise Exception(f"Error downloading file: {e}")
-
-
-        #     token = self._access_token
-        #     project = self.project_id
-        #     creds = credentials.Credentials(token)
-        #     client = storage.Client(project=project, credentials=creds)
-        #     bucket = client.bucket(bucket_name)
-        #     print("bucket : " ,  bucket, " file_path : ", file_path , " name : " , name , " format : " , format)
-        #     #blob_path = os.path.join(file_path, name) if file_path else name
-        #     blob_path = file_path
-        #     print("blob path" , blob_path)
-        #     blob = bucket.blob(blob_path)
-            
-        #     if not blob.exists():
-        #         self.set_status(404)
-        #         self.write({"error": "File not found in GCS"})
-        #         return
-
-        #     content = await blob.download_as_bytes()
-        #     mime_type = 'application/octet-stream'
-        #     # get_mime_type(name, content)
-        #     self.set_header('Content-Type', mime_type)
-        #     self.write(content)
-
-        # except Exception as e:
-        #     print(f"Error retrieving {name}: {e}")
-        #     self.set_status(500)
-        #     self.write({"error": "Internal Server Error"})
-
-    # def get_mime_type(filename, content):
-    #     # Try using python-magic (more accurate)
-    #     try:
-    #         mime_type = magic.from_buffer(content, mime=True).decode('utf-8')
-    #         return mime_type
-    #     except Exception:
-    #         # Fallback to mimetypes based on filename extension (less reliable)
-    #         mime_type, _ = mimetypes.guess_type(filename)
-    #         return mime_type or 'application/octet-stream'
